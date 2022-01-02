@@ -10,24 +10,23 @@ class ContainerLinuxReleasesBridge extends BridgeAbstract {
 	const BETA = 'beta';
 	const ALPHA = 'alpha';
 
-	const PARAMETERS = [
-		[
-			'channel' => [
+	const PARAMETERS = array(
+		array(
+			'channel' => array(
 				'name' => 'Release Channel',
 				'type' => 'list',
 				'defaultValue' => self::STABLE,
-				'values' => [
+				'values' => array(
 					'Stable' => self::STABLE,
 					'Beta' => self::BETA,
 					'Alpha' => self::ALPHA,
-				],
-			]
-		]
-	];
+				),
+			)
+		)
+	);
 
 	private function getReleaseFeed($jsonUrl) {
-		$json = getContents($jsonUrl)
-			or returnServerError('Could not request Core OS Website.');
+		$json = getContents($jsonUrl);
 		return json_decode($json, true);
 	}
 
@@ -39,7 +38,7 @@ class ContainerLinuxReleasesBridge extends BridgeAbstract {
 		$data = $this->getReleaseFeed($this->getJsonUri());
 
 		foreach ($data as $releaseVersion => $release) {
-			$item = [];
+			$item = array();
 
 			$item['uri'] = "https://coreos.com/releases/#$releaseVersion";
 			$item['title'] = $releaseVersion;

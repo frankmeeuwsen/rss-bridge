@@ -29,6 +29,13 @@ custom_timeout = false
 ; ""    = Disabled (default)
 email = ""
 
+; Show Donation information for bridges if available.
+; This will display a 'Donate' link on the bridge view
+; and a "Donate" button in the HTML view of the bridges feed.
+; true  = enabled (default)
+; false = disabled
+donations = true
+
 [proxy]
 
 ; Sets the proxy url (i.e. "tcp://192.168.0.0:32")
@@ -60,6 +67,18 @@ username = ""
 ; The password for authentication. Insert this password when prompted for login.
 ; Use a strong password to prevent others from guessing your login!
 password = ""
+
+[error]
+
+; Defines how error messages are returned by RSS-Bridge
+;
+; "feed" = As part of the feed (default)
+; "http" = As HTTP error message
+; "none" = No errors are reported
+output = "feed"
+
+; Defines how often an error must occur before it is reported to the user
+report_limit = 1
 
 ; --- Cache specific configuration ---------------------------------------------
 

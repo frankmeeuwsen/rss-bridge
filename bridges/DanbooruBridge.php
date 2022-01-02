@@ -40,7 +40,7 @@ class DanbooruBridge extends BridgeAbstract {
 		defaultLinkTo($element, $this->getURI());
 
 		$item = array();
-		$item['uri'] = $element->find('a', 0)->href;
+		$item['uri'] = html_entity_decode($element->find('a', 0)->href);
 		$item['postid'] = (int)preg_replace('/[^0-9]/', '', $element->getAttribute(static::IDATTRIBUTE));
 		$item['timestamp'] = time();
 		$thumbnailUri = $element->find('img', 0)->src;
@@ -57,8 +57,7 @@ class DanbooruBridge extends BridgeAbstract {
 	}
 
 	public function collectData(){
-		$content = getContents($this->getFullURI())
-			or returnServerError('Could not request ' . $this->getName());
+		$content = getContents($this->getFullURI());
 
 		$html = Fix_Simple_Html_Dom::str_get_html($content);
 

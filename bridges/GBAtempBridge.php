@@ -76,14 +76,13 @@ class GBAtempBridge extends BridgeAbstract {
 
 	public function collectData(){
 
-		$html = getSimpleHTMLDOM(self::URI)
-			or returnServerError('Could not request GBAtemp.');
+		$html = getSimpleHTMLDOM(self::URI);
 
 		switch($this->getInput('type')) {
 		case 'N':
-			foreach($html->find('li[class=news_item full]') as $newsItem) {
+			foreach($html->find('li[class=news_item news full]') as $newsItem) {
 				$url = self::URI . $newsItem->find('a', 0)->href;
-				$img = $this->getURI() . $newsItem->find('img', 0)->src . '#.image';
+				$img = $this->getURI() . extractFromDelimiters($newsItem->find('a.news_image', 0)->style, 'url(', ')') . '#.image';
 				$time = $this->findItemDate($newsItem);
 				$author = $newsItem->find('a.username', 0)->plaintext;
 				$title = $newsItem->find('a', 1)->plaintext;
@@ -97,8 +96,7 @@ class GBAtempBridge extends BridgeAbstract {
 				$url = self::URI . $reviewItem->find('a', 0)->href;
 				$img = $this->getURI() . extractFromDelimiters($reviewItem->find('a', 0)->style, 'image:url(', ')');
 				$title = $reviewItem->find('span.review_title', 0)->plaintext;
-				$content = getSimpleHTMLDOM($url)
-					or returnServerError('Could not request GBAtemp: ' . $uri);
+				$content = getSimpleHTMLDOM($url);
 				$author = $content->find('a.username', 0)->plaintext;
 				$time = $this->findItemDate($content);
 				$intro = '<p><b>' . ($content->find('div#review_intro', 0)->plaintext) . '</b></p>';
@@ -113,8 +111,8 @@ class GBAtempBridge extends BridgeAbstract {
 			break;
 		case 'T':
 			foreach($html->find('li.portal-tutorial') as $tutorialItem) {
-				$url = self::URI . $tutorialItem->find('a', 0)->href;
-				$title = $tutorialItem->find('a', 0)->plaintext;
+				$url = self::URI . $tutorialItem->find('a', 1)->href;
+				$title = $tutorialItem->find('a', 1)->plaintext;
 				$time = $this->findItemDate($tutorialItem);
 				$author = $tutorialItem->find('a.username', 0)->plaintext;
 				$content = $this->fetchPostContent($url, self::URI);

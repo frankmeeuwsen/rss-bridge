@@ -3,7 +3,7 @@ class CollegeDeFranceBridge extends BridgeAbstract {
 
 	const MAINTAINER = 'pit-fgfjiudghdf';
 	const NAME = 'CollegeDeFrance';
-	const URI = 'http://www.college-de-france.fr/';
+	const URI = 'https://www.college-de-france.fr/';
 	const CACHE_TIMEOUT = 10800; // 3h
 	const DESCRIPTION = 'Returns the latest audio and video from CollegeDeFrance';
 
@@ -34,8 +34,7 @@ class CollegeDeFranceBridge extends BridgeAbstract {
 		 * </li>
 		 */
 		$html = getSimpleHTMLDOM(self::URI
-		. 'components/search-audiovideo.jsp?fulltext=&siteid=1156951719600&lang=FR&type=all')
-			or returnServerError('Could not request CollegeDeFrance.');
+		. 'components/search-audiovideo.jsp?fulltext=&siteid=1156951719600&lang=FR&type=all');
 
 		foreach($html->find('a[data-target]') as $element) {
 			$item = array();

@@ -110,8 +110,7 @@ class XenForoBridge extends BridgeAbstract {
 
 		}
 
-		$html = getSimpleHTMLDOMCached($this->threadurl)
-			or returnServerError('Failed loading data from "' . $this->threadurl . '"!');
+		$html = getSimpleHTMLDOMCached($this->threadurl);
 
 		$html = defaultLinkTo($html, $this->threadurl);
 
@@ -395,7 +394,7 @@ class XenForoBridge extends BridgeAbstract {
 	 */
 	private function fixDate($date, $lang = 'en-US') {
 
-		$mnamesen = [
+		$mnamesen = array(
 			'January',
 			'Feburary',
 			'March',
@@ -408,7 +407,7 @@ class XenForoBridge extends BridgeAbstract {
 			'October',
 			'November',
 			'December'
-		];
+		);
 
 		switch($lang) {
 			case 'en-US': // example: Jun 9, 2018 at 11:46 PM
@@ -418,7 +417,7 @@ class XenForoBridge extends BridgeAbstract {
 
 			case 'de-DE': // example: 19 Juli 2018 um 19:27 Uhr
 
-				$mnamesde = [
+				$mnamesde = array(
 					'Januar',
 					'Februar',
 					'März',
@@ -431,9 +430,9 @@ class XenForoBridge extends BridgeAbstract {
 					'Oktober',
 					'November',
 					'Dezember'
-				];
+				);
 
-				$mnamesdeshort = [
+				$mnamesdeshort = array(
 					'Jan.',
 					'Feb.',
 					'Mär.',
@@ -446,7 +445,7 @@ class XenForoBridge extends BridgeAbstract {
 					'Okt.',
 					'Nov.',
 					'Dez.'
-				];
+				);
 
 				$date = str_ireplace($mnamesde, $mnamesen, $date);
 				$date = str_ireplace($mnamesdeshort, $mnamesen, $date);

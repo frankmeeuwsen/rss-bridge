@@ -3,7 +3,7 @@ class ElsevierBridge extends BridgeAbstract {
 
 	const MAINTAINER = 'Pierre Mazière';
 	const NAME = 'Elsevier journals recent articles';
-	const URI = 'http://www.journals.elsevier.com/';
+	const URI = 'https://www.journals.elsevier.com/';
 	const CACHE_TIMEOUT = 43200; //12h
 	const DESCRIPTION = 'Returns the recent articles published in Elsevier journals';
 
@@ -63,8 +63,7 @@ class ElsevierBridge extends BridgeAbstract {
 
 	public function collectData(){
 		$uri = self::URI . $this->getInput('j') . '/recent-articles/';
-		$html = getSimpleHTMLDOM($uri)
-			or returnServerError('No results for Elsevier journal ' . $this->getInput('j'));
+		$html = getSimpleHTMLDOM($uri);
 
 		foreach($html->find('.pod-listing') as $article) {
 			$item = array();

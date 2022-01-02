@@ -116,6 +116,12 @@ class DesoutterBridge extends BridgeAbstract {
 				'name' => 'Load full articles',
 				'type' => 'checkbox',
 				'title' => 'Enable to load the full article for each item'
+			),
+			'limit' => array(
+				'name' => 'Limit',
+				'type' => 'number',
+				'defaultValue' => 3,
+				'title' => "Maximum number of items to return in the feed.\n0 = unlimited"
 			)
 		)
 	);
@@ -149,12 +155,13 @@ class DesoutterBridge extends BridgeAbstract {
 		}
 		*/
 
-		$html = getSimpleHTMLDOM($this->getURI())
-			or returnServerError('Could not request ' . $this->getURI());
+		$html = getSimpleHTMLDOM($this->getURI());
 
 		$html = defaultLinkTo($html, $this->getURI());
 
 		$this->title = html_entity_decode($html->find('title', 0)->plaintext, ENT_QUOTES);
+
+		$limit = $this->getInput('limit') ?: 0;
 
 		foreach($html->find('article') as $article) {
 			$item = array();
@@ -169,13 +176,14 @@ class DesoutterBridge extends BridgeAbstract {
 			}
 
 			$this->items[] = $item;
+
+			if ($limit > 0 && count($this->items) >= $limit) break;
 		}
 
 	}
 
 	private function getFullNewsArticle($uri) {
-		$html = getSimpleHTMLDOMCached($uri)
-			or returnServerError('Unable to load full article!');
+		$html = getSimpleHTMLDOMCached($uri);
 
 		$html = defaultLinkTo($html, $this->getURI());
 
@@ -189,8 +197,7 @@ class DesoutterBridge extends BridgeAbstract {
 	 * @return void
 	 */
 	private function extractNewsLanguages() {
-		$html = getSimpleHTMLDOMCached('https://www.desouttertools.com/about-desoutter/news-events')
-			or returnServerError('Error loading news!');
+		$html = getSimpleHTMLDOMCached('https://www.desouttertools.com/about-desoutter/news-events');
 
 		$html = defaultLinkTo($html, static::URI);
 
@@ -215,8 +222,7 @@ class DesoutterBridge extends BridgeAbstract {
 	 * @return void
 	 */
 	private function extractIndustryLanguages() {
-		$html = getSimpleHTMLDOMCached('https://www.desouttertools.com/industry-4-0/news')
-			or returnServerError('Error loading news!');
+		$html = getSimpleHTMLDOMCached('https://www.desouttertools.com/industry-4-0/news');
 
 		$html = defaultLinkTo($html, static::URI);
 

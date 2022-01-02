@@ -34,6 +34,12 @@ class KununuBridge extends BridgeAbstract {
 				'name' => 'Include benefits',
 				'type' => 'checkbox',
 				'title' => 'Activate to include benefits in the feed'
+			),
+			'limit' => array(
+				'name' => 'Limit',
+				'type' => 'number',
+				'defaultValue' => 3,
+				'title' => "Maximum number of items to return in the feed.\n0 = unlimited"
 			)
 		),
 		array(
@@ -89,8 +95,7 @@ class KununuBridge extends BridgeAbstract {
 		$full = $this->getInput('full');
 
 		// Load page
-		$html = getSimpleHTMLDOM($this->getURI())
-			or returnServerError('Unable to receive data from ' . $this->getURI() . '!');
+		$html = getSimpleHTMLDOM($this->getURI());
 
 		$html = defaultLinkTo($html, static::URI);
 
@@ -107,6 +112,8 @@ class KununuBridge extends BridgeAbstract {
 		// Find all articles (within the panels)
 		$articles = $section->find('article')
 			or returnServerError('Unable to find articles!');
+
+		$limit = $this->getInput('limit') ?: 0;
 
 		// Go through all articles
 		foreach($articles as $article) {
@@ -140,6 +147,8 @@ class KununuBridge extends BridgeAbstract {
 			}
 
 			$this->items[] = $item;
+
+			if ($limit > 0 && count($this->items) >= $limit) break;
 
 		}
 	}

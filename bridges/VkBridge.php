@@ -3,7 +3,9 @@
 class VkBridge extends BridgeAbstract
 {
 
-	const MAINTAINER = 'ahiles3005';
+	const MAINTAINER = 'em92';
+	// const MAINTAINER = 'pmaziere';
+	// const MAINTAINER = 'ahiles3005';
 	const NAME = 'VK.com';
 	const URI = 'https://vk.com/';
 	const CACHE_TIMEOUT = 300; // 5min
@@ -26,7 +28,7 @@ class VkBridge extends BridgeAbstract
 
 	protected function getAccessToken()
 	{
-		return 'c8071613517c155c6cfbd2a059b2718e9c37b89094c4766834969dda75f657a2c1cbb49bab4c5e649f1db';
+		return 'e69b2db9f6cd4a97c0716893232587165c18be85bc1af1834560125c1d3c8ec281eb407a78cca0ae16776';
 	}
 
 	public function getURI()
@@ -49,8 +51,7 @@ class VkBridge extends BridgeAbstract
 
 	public function collectData()
 	{
-		$text_html = $this->getContents()
-		or returnServerError('No results for group or user name "' . $this->getInput('u') . '".');
+		$text_html = $this->getContents();
 
 		$text_html = iconv('windows-1251', 'utf-8//ignore', $text_html);
 		// makes album link generating work correctly
@@ -70,6 +71,11 @@ class VkBridge extends BridgeAbstract
 		$last_post_id = 0;
 
 		foreach ($html->find('.post') as $post) {
+
+			if ($post->find('.wall_post_text_deleted')) {
+				// repost of deleted post
+				continue;
+			}
 
 			defaultLinkTo($post, self::URI);
 
@@ -157,15 +163,13 @@ class VkBridge extends BridgeAbstract
 			// get all other videos
 			foreach($post->find('a.page_post_thumb_video') as $a) {
 				$video_title = htmlspecialchars_decode($a->getAttribute('aria-label'));
-				$temp = explode(' ', $video_title, 2);
-				if (count($temp) > 1) $video_title = $temp[1];
 				$video_link = $a->getAttribute('href');
 				if ($video_link != $main_video_link) $this->appendVideo($video_title, $video_link, $content_suffix, $post_videos);
 				$a->outertext = '';
 			}
 
 			// get all photos
-			foreach($post->find('div.wall_text > a.page_post_thumb_wrap') as $a) {
+			foreach($post->find('div.wall_text a.page_post_thumb_wrap') as $a) {
 				$result = $this->getPhoto($a);
 				if ($result == null) continue;
 				$a->outertext = '';
@@ -230,41 +234,77 @@ class VkBridge extends BridgeAbstract
 				$div->outertext = '';
 			}
 
-			// get sign
+			// get sign / post author
 			$post_author = $pageName;
-			foreach($post->find('a.wall_signed_by') as $a) {
-				$post_author = $a->innertext;
-				$a->outertext = '';
+			$author_selectors = array('a.wall_signed_by', 'a.author');
+			foreach($author_selectors as $author_selector) {
+				$a = $post->find($author_selector, 0);
+				if (is_object($a)) {
+					$post_author = $a->innertext;
+					$a->outertext = '';
+					break;
+				}
 			}
 
-			if (is_object($post->find('div.copy_quote', 0))) {
+			// fix links and get post hashtags
+			$hashtags = array();
+			foreach($post->find('a') as $a) {
+				$href = $a->getAttribute('href');
+				$innertext = $a->innertext;
+
+				$hashtag_prefix = '/feed?section=search&q=%23';
+				$hashtag = null;
+
+				if ($href && substr($href, 0, strlen($hashtag_prefix)) === $hashtag_prefix) {
+					$hashtag = urldecode(substr($href, strlen($hashtag_prefix)));
+				} else if (substr($innertext, 0, 1) == '#') {
+					$hashtag = $innertext;
+				}
+
+				if ($hashtag) {
+					$a->outertext = $innertext;
+					$hashtags[] = $hashtag;
+					continue;
+				}
+
+				$parsed_url = parse_url($href);
+
+				if (array_key_exists('path', $parsed_url) === false) continue;
+
+				if (strpos($parsed_url['path'], '/away.php') === 0) {
+					parse_str($parsed_url['query'], $parsed_query);
+					$a->setAttribute('href', iconv(
+						'windows-1251',
+						'utf-8//ignore',
+						$parsed_query['to']
+					));
+				}
+			}
+
+			$copy_quote = $post->find('div.copy_quote', 0);
+			if (is_object($copy_quote)) {
 				if ($this->getInput('hide_reposts') === true) {
 					continue;
 				}
-				$copy_quote = $post->find('div.copy_quote', 0);
 				if ($copy_post_header = $copy_quote->find('div.copy_post_header', 0)) {
 					$copy_post_header->outertext = '';
 				}
+
+				$second_copy_quote = $copy_quote->find('div.published_sec_quote', 0);
+				if (is_object($second_copy_quote)) {
+					$second_copy_quote_author = $second_copy_quote->find('a.copy_author', 0)->outertext;
+					$second_copy_quote_content = $second_copy_quote->find('div.copy_post_date', 0)->outertext;
+					$second_copy_quote->outertext = "<br>Reposted ($second_copy_quote_author): $second_copy_quote_content";
+				}
+				$copy_quote_author = $copy_quote->find('a.copy_author', 0)->outertext;
 				$copy_quote_content = $copy_quote->innertext;
-				$copy_quote->outertext = "<br>Reposted: <br>$copy_quote_content";
+				$copy_quote->outertext = "<br>Reposted ($copy_quote_author): <br>$copy_quote_content";
 			}
 
 			$item = array();
-			$item['content'] = strip_tags(backgroundToImg($post->find('div.wall_text', 0)->innertext), '<br><img>');
+			$item['content'] = strip_tags(backgroundToImg($post->find('div.wall_text', 0)->innertext), '<a><br><img>');
 			$item['content'] .= $content_suffix;
-			$item['categories'] = array();
-
-			// get post hashtags
-			foreach($post->find('a') as $a) {
-				$href = $a->getAttribute('href');
-				$prefix = '/feed?section=search&q=%23';
-				$innertext = $a->innertext;
-				if ($href && substr($href, 0, strlen($prefix)) === $prefix) {
-					$item['categories'][] = urldecode(substr($href, strlen($prefix)));
-				} else if (substr($innertext, 0, 1) == '#') {
-					$item['categories'][] = $innertext;
-				}
-			}
+			$item['categories'] = $hashtags;
 
 			// get post link
 			$post_link = $post->find('a.post_link', 0)->getAttribute('href');
@@ -308,7 +348,7 @@ class VkBridge extends BridgeAbstract
 		$data = json_decode($arg, true);
 		if ($data == null) return;
 
-		$thumb = $data['temp']['base'] . $data['temp']['x_'][0] . '.jpg';
+		$thumb = $data['temp']['base'] . $data['temp']['x_'][0];
 		$original = '';
 		foreach(array('y_', 'z_', 'w_') as $key) {
 			if (!isset($data['temp'][$key])) continue;
@@ -318,7 +358,7 @@ class VkBridge extends BridgeAbstract
 			} else {
 				$base = $data['temp']['base'];
 			}
-			$original = $base . $data['temp'][$key][0] . '.jpg';
+			$original = $base . $data['temp'][$key][0];
 		}
 
 		if ($original) {
@@ -330,7 +370,7 @@ class VkBridge extends BridgeAbstract
 
 	private function getTitle($content)
 	{
-		preg_match('/^["\w\ \p{Cyrillic}\(\)\?#«»-]+/mu', htmlspecialchars_decode($content), $result);
+		preg_match('/^["\w\ \p{L}\(\)\?#«»-]+/mu', htmlspecialchars_decode($content), $result);
 		if (count($result) == 0) return 'untitled';
 		return $result[0];
 	}
@@ -341,6 +381,7 @@ class VkBridge extends BridgeAbstract
 			return $time;
 		} else {
 			$strdate = $post->find('span.rel_date', 0)->plaintext;
+			$strdate = preg_replace('/[\x00-\x1F\x7F-\xFF]/', ' ', $strdate);
 
 			$date = date_parse($strdate);
 			if (!$date['year']) {
@@ -349,11 +390,15 @@ class VkBridge extends BridgeAbstract
 				} elseif (strstr($strdate, 'yesterday ') !== false) {
 					$time = time() - 60 * 60 * 24;
 					$strdate = date('d-m-Y', $time) . ' ' . $strdate;
+				} elseif ($date['month'] && intval(date('m')) < $date['month']) {
+					$strdate = $strdate . ' ' . (date('Y') - 1);
 				} else {
 					$strdate = $strdate . ' ' . date('Y');
 				}
 
 				$date = date_parse($strdate);
+			} elseif ($date['hour'] === false) {
+				$date['hour'] = $date['minute'] = '00';
 			}
 			return strtotime($date['day'] . '-' . $date['month'] . '-' . $date['year'] . ' ' .
 				$date['hour'] . ':' . $date['minute']);
@@ -394,11 +439,11 @@ class VkBridge extends BridgeAbstract
 			'count' => 200
 		));
 
-		if (isset($result['error'])) return;
-
-		foreach($result['response']['items'] as $item) {
-			$video_id = strval($item['owner_id']) . '_' . strval($item['id']);
-			$this->videos[$video_id]['url'] = $item['player'];
+		if (!isset($result['error'])) {
+			foreach($result['response']['items'] as $item) {
+				$video_id = strval($item['owner_id']) . '_' . strval($item['id']);
+				$this->videos[$video_id]['url'] = $item['player'];
+			}
 		}
 
 		foreach($this->items as &$item) {

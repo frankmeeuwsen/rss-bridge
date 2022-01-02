@@ -3,7 +3,7 @@ class ScoopItBridge extends BridgeAbstract {
 
 	const MAINTAINER = 'Pitchoule';
 	const NAME = 'ScoopIt';
-	const URI = 'http://www.scoop.it/';
+	const URI = 'https://www.scoop.it/';
 	const CACHE_TIMEOUT = 21600; // 6h
 	const DESCRIPTION = 'Returns most recent results from ScoopIt.';
 
@@ -18,8 +18,7 @@ class ScoopItBridge extends BridgeAbstract {
 		$this->request = $this->getInput('u');
 		$link = self::URI . 'search?q=' . urlencode($this->getInput('u'));
 
-		$html = getSimpleHTMLDOM($link)
-			or returnServerError('Could not request ScoopIt. for : ' . $link);
+		$html = getSimpleHTMLDOM($link);
 
 		foreach($html->find('div.post-view') as $element) {
 			$item = array();

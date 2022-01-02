@@ -15,8 +15,7 @@ class GoComicsBridge extends BridgeAbstract {
 	));
 
 	public function collectData(){
-		$html = getSimpleHTMLDOM($this->getURI())
-			or returnServerError('Could not request GoComics: ' . $this->getURI());
+		$html = getSimpleHTMLDOM($this->getURI());
 
 		//Get info from first page
 		$author = preg_replace('/By /', '', $html->find('.media-subheading', 0)->plaintext);
@@ -26,9 +25,8 @@ class GoComicsBridge extends BridgeAbstract {
 
 			$item = array();
 
-			$page = getSimpleHTMLDOM($link)
-				or returnServerError('Could not request GoComics: ' . $link);
-			$imagelink = $page->find('.img-fluid', 1)->src;
+			$page = getSimpleHTMLDOM($link);
+			$imagelink = $page->find('.comic.container', 0)->getAttribute('data-image');
 			$date = explode('/', $link);
 
 			$item['id'] = $imagelink;
